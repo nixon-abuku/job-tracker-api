@@ -60,6 +60,30 @@ app.put('/jobs/:id', async function(req, res){
     res.status(200).json(result.rows);
 });
 
+//DELETE
+// WHAT IT DOES: Successfully deletes a job on the database through job id 
+// INPUTS: req.params.id
+// OUTPUTS: JSON message: job $id Successfully deleted 
+// STEPS:
+// 1.Check if job exists 
+// 2.If job doesn't exist return 404 status code job does not exist 
+// 3. If job exists successfully delete it
+// 4. Return JSON Message confirming job is deleted
+
+
+app.delete('/jobs/:id', async function(req, res){
+    const id = Number(req.params.id);
+
+    //DELETE JOB
+    const result = await pool.query('DELETE FROM jobs WHERE id = $1 RETURNING *', [id]);
+
+    //VALIDATION 
+    if(result.rows.length === 0){
+        return res.status(404).json({Message: "Job not found"});
+    }
+    //JOB DELETE CONFIRMATION
+    res.status(200).json({Message: "Job successfully deleted"});
+});
 
 app.listen(3000, function(){
     console.log("Server started")
