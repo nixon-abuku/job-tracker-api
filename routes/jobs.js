@@ -1,10 +1,18 @@
+// WHAT IT DOES: Move jobs route to jobs.js to be better organized and mantain cleanness and easy reading throught the code
+// INPUTS:  The 4 route handler functions currently living in index.js
+// OUTPUTS: a clean index.js that just sets up the server and a routes/jobs that handles all the job routes 
+// STEPS:
+// 1. Create new file called Jobs.route
+// 2. Import the tools
+// 3. Link it to the app server we created at index.js 
+// 4.Test all routes in postman to confirm nothing broke
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
 router.get('/', async function(req, res){
     const result = await pool.query('SELECT * FROM jobs;');
-    res.json(result.rows);
+    return res.json(result.rows);
 });
 //POST
 
@@ -28,7 +36,7 @@ router.post('/', async function(req, res){
 
     //DATABASE INSERT 
     const result = await pool.query('INSERT INTO jobs (company, position, status) VALUES($1, $2, $3) RETURNING *', [company, position, status]);
-    res.status(201).json(result.rows);
+    return res.status(201).json(result.rows);
 });
 
 //PUT 
@@ -57,7 +65,7 @@ router.put('/:id', async function(req, res){
         return res.status(404).json({Message:"Job does not exist"});
     }
     //RETURN UPDATED JOB
-    res.status(200).json(result.rows);
+    return res.status(200).json(result.rows);
 });
 
 //DELETE
@@ -82,15 +90,7 @@ router.delete('/:id', async function(req, res){
         return res.status(404).json({Message: "Job not found"});
     }
     //JOB DELETE CONFIRMATION
-    res.status(200).json({Message: "Job successfully deleted"});
+    return res.status(200).json({Message: "Job successfully deleted"});
 });
 module.exports = router;
 
-// WHAT IT DOES: Move jobs route to jobs.js to be better organized and mantain cleanness and easy reading throught the code
-// INPUTS:  The 4 route handler functions currently living in index.js
-// OUTPUTS: a clean index.js that just sets up the server and a routes/jobs that handles all the job routes 
-// STEPS:
-// 1. Create new file called Jobs.route
-// 2. Import the tools
-// 3. Link it to the app server we created at index.js 
-// 4.Test all routes in postman to confirm nothing broke
