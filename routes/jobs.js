@@ -10,10 +10,20 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
+//GET  ALL JOBS 
 router.get('/', async function(req, res){
-    const result = await pool.query('SELECT * FROM jobs;');
-    return res.json(result.rows);
+    try{
+        const result = await pool.query('SELECT * FROM jobs;');
+        return res.status(200).json(result.rows);
+    }catch(error){
+        console.error(error);
+        return res.status(500).json({Message: "Something went wrong"});
+    }
 });
+
+
+
+
 //POST
 
 // WHAT IT DOES: Check the company, posititon, and status are present before inserting them 
@@ -24,19 +34,26 @@ router.get('/', async function(req, res){
 // 2. if missing return 400 with error message 
 // 3. If all present run the insert query
 
+// CREATE A NEW JOB 
 router.post('/', async function(req, res){
-    const company = req.body.company
-    const position = req.body.position
-    const status = req.body.status
+    const company = req.body.company;
+    const position = req.body.position;
+    const status = req.body.status;
 
-    // VALIDATION 
-    if (!company || !position || !status){
-        return res.status(400).json({Message: "Please fill the required fields"})
+    //VALIDATION CHECKING IF COMPANY POSITION & STATUS ARE FILLED
+    if(!company || !position || !status){
+        return res.status(400).json({Message: "Please fill in the required fields"});
     }
-
-    //DATABASE INSERT 
-    const result = await pool.query('INSERT INTO jobs (company, position, status) VALUES($1, $2, $3) RETURNING *', [company, position, status]);
-    return res.status(201).json(result.rows);
+    try {
+        //INSERT QUERY USING PLACE HOLDERS TO AVOID SQL INJECTION
+        const result = await pool.query('INSERT INTO jobs(company, position, status) VALUES($1, $2, $3) RETURNING *;', [company, position, status]);
+        return res.status(201).json(result.rows[0]);
+    }
+    //ERROR IN CASE SOMETHING BREAKS IN THE CODE
+    catch(error) {
+        console.error(error);
+        return res.status(500).json({Message: "Internal Service error"});
+    }
 });
 
 //PUT 
@@ -50,22 +67,30 @@ router.post('/', async function(req, res){
 // 3. If job exists update the info
 // 4. Return copy of  updated job in JSON with 200 status code 
 
+// UPDATE A JOB
 router.put('/:id', async function(req, res){
-    const company = req.body.company;
-    const position = req.body.position;
-    const status = req.body.status;
     const id = Number(req.params.id);
+    const status = req.body.status;
 
-    
-
-    //DATABASE UPDATE
-    const result = await pool.query('UPDATE jobs SET company = $1, position = $2, status = $3 WHERE id = $4 RETURNING *;', [company, position, status, id]);
-    //VALIDATION 
-    if (result.rows.length === 0){
-        return res.status(404).json({Message:"Job does not exist"});
+    //VALIDATION CHECKS IF STATUS is EMPTY OR JOB_ID IS NOT A NUMBER THEN THROWS ERROR IF TRUE
+    if (!status || isNaN(id)){
+        return res.status(400).json({Message: "Bad request Please check your status and id"});
     }
-    //RETURN UPDATED JOB
-    return res.status(200).json(result.rows);
+    try{
+        // UPDATE QUERY WITH PLACE HOLDERS TO AVOID SQL INJECTION 
+        const result = await pool.query('UPDATE jobs SET status = $2 WHERE id = $1 RETURNING *;', [id, status]);
+        //VALIDATION: CHEECKS IF ID EXISTS IN THE DATABASE
+        if(result.rowCount === 0){
+            return res.status(404).json({Message: "Job does not exist "});
+        }
+        return res.status(200).json(result.rows[0]);
+    }
+    //ERROR IN CASE SOMETHING BREAKS IN THE CODE
+    catch(error){
+        console.error(error);
+        return res.status(500).json({Message: "Internal Service Error"});
+
+    }
 });
 
 //DELETE
@@ -78,19 +103,34 @@ router.put('/:id', async function(req, res){
 // 3. If job exists successfully delete it
 // 4. Return JSON Message confirming job is deleted
 
-
+// DELETE 
 router.delete('/:id', async function(req, res){
     const id = Number(req.params.id);
 
-    //DELETE JOB
-    const result = await pool.query('DELETE FROM jobs WHERE id = $1 RETURNING *', [id]);
-
-    //VALIDATION 
-    if(result.rows.length === 0){
-        return res.status(404).json({Message: "Job not found"});
+    //VALIDATION CHECKS IF JOB ID IS RIGHT FORMAT IF NOT THEN ERROR 
+    if(isNaN(id)){
+        return res.status(400).json({Message: "Invalid job ID format"})
     }
-    //JOB DELETE CONFIRMATION
-    return res.status(200).json({Message: "Job successfully deleted"});
+
+    try{
+
+        // DELETE QUERY WITH PLACE HOLDERS TO AVOID SQL INJECTION
+        const result = await pool.query('DELETE FROM jobs WHERE id = $1;', [id]);
+
+        //VALIDATION CHECKS IF JOB EXISTS IN DATABASE IF NOT THEN ERROR 
+        if(result.rowCount === 0){
+            return res.status(404).json({Message: "Job does not exist"});
+        }
+
+        //CONFIRMATION OF JOB DELETED
+        return res.status(200).json({Message: "Job deleted Successfully"});
+
+    }
+    // ERROR INCASE CODE BREAKS
+    catch(error){
+        console.error(error);
+        return res.status(500).json({Message: "Internal Service Error"})
+    }
 });
 module.exports = router;
 
