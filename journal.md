@@ -75,3 +75,32 @@
 * I know I have error handling in my code but this was error handling inside the routes so outside the routes if something breaks 
 * The client will just get a html error that shows too much information
 * My goal is to just show a simple json message if something breaks outside 
+
+### DAY 2 06/22/2026
+## 1. POST /auth/register
+
+1. The client will send username and password
+2. If the username and password are missing then status code 400 bad request please fill in the required fields
+3. The password must be hashed before postgres receives it 
+4. The username and hashed password should be stored in the users table 
+5. Postman should receive a 201 status code and json message stating account created successfully 
+
+### 2. WHAT I DID 
+1. I imported express pool bcrypt and router
+2. I then stored the req.body.username and req.body.password into variable username and password
+3. I then did a validation to make sure username and password are both filled and if not filled then status code 400 with message to fill the required fields 
+4. Then Inside try I hashed the password before i run the INSERT query because the original password should not be stored in the database for security
+5. After the password is hashed I then ran the INSERT query using place holders to avoid sql injections 
+6. Then returned the username only as json with status code 201 to confirm account created successfully
+7. Then inside catch i caught error code 23505 username already  exists as HTTP status code 409
+8. Else anything broke in the code it would return error 500 with json message Internal Service error meaning problem is on my side 
+
+### 3.INTENTIONAL BREAKDOWN AND TESTING WITH POSTMAN
+1. I tried to only send username field without password and I got status code 400 saying please fill all the required fields 
+2. I then filled both in and got a 201created successfully  with username returned as json 
+3. I then tried to refill with same username and password and got a 409 status code meaning username already exists in the database 
+4. I then broke down the code by changing username inside INSERT statement to usename and i got error code 500 internal Service Error 
+
+### ERRORS I FACED 
+1. I also figured that I can create duplicate account by just having same username but one in capital one in small 
+2. So i figured i need a function that will transform the incoming username from client into lowercase before the username even hits the database 
