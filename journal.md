@@ -104,3 +104,37 @@
 ### ERRORS I FACED 
 1. I also figured that I can create duplicate account by just having same username but one in capital one in small 
 2. So i figured i need a function that will transform the incoming username from client into lowercase before the username even hits the database 
+`
+
+### DAY 3 06/23/2026
+## 1. POST /auth/login
+
+1.  Postman/Client will send username & password
+2. If username and password missing then 400 status code with message please fill in required fields 
+3. Then submitted username will be searched in the username column in users table 
+4. Postgres returns username found so username matches 
+5. If username does not exist then a 401 Unauthorized  status code with message invalid username or password  
+6. If username exists then the  hashed password gets pulled from db and  bycrypt.compare is used  to compare if the password matches the hashed password in the db
+7. If the bbcrypt function is false then 401 unauthorized status code with message saying "invalid username or password" 
+8. If bcrypt function is true meaning password matches then a 200 ok message saying signed in 
+9. Then JWT token is created as well to allow the  the user to get in  so that they dont have to provide username and password when they come again
+
+### WHAT I DID 
+1. I stored the body username and password in variable username and password
+2. I then did defensive coding to check if the username and password are filled if not then 400 bad request with message 
+3. I then queried the DB to pull the id, username, and hashed password from DB
+4. Then defensive coding to check if the username sent by client/postman exists in DB if it doesnt then 401 status code error with message 
+5. If username found then the data gets stored in variable called founduser 
+6. Then I proceed to compare the password with bcrypt.compare sent with the hashed password in database
+7. If password dont match then error 401 status code with message 
+8. If password matched then i proceed token creation with jwt
+9. I imported jwt and used jwt.sign() to create token 
+10. Then a success message with status 200 and token created 
+
+### INTENTIONAL BREAKDOWN & TESTING 
+1. I tried to send a post request to /auth/login with blank username and password and i got 400 status code with message
+2. I then typed a random username that doent exist in database and password and got a 401 status code with message
+3. I then typed a username that exist in database but wrong password and i got a 401 status code with message 
+4. I then typed a username that exist in database with the right password and i got a 200 status code with message and created token 
+5. I then broke down the code intentionally by smispelling jwt.sign to jwt.sin and got 500 status code with message Internal Server error 
+
