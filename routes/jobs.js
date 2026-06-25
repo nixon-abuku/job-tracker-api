@@ -10,10 +10,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool.js');
 
-//GET  ALL JOBS 
+//GET  ALL JOBS FOR THE AUTHENTICATED USER 
 router.get('/', async function(req, res){
+    const id = req.userId;
     try{
-        const result = await pool.query('SELECT * FROM jobs;');
+        const result = await pool.query('SELECT * FROM jobs WHERE user_id = $1;', [id]);
         return res.status(200).json(result.rows);
     }catch(error){
         console.error(error);
@@ -39,6 +40,7 @@ router.post('/', async function(req, res){
     const company = req.body.company;
     const position = req.body.position;
     const status = req.body.status;
+    const id = req.userId;
 
     //VALIDATION CHECKING IF COMPANY POSITION & STATUS ARE FILLED
     if(!company || !position || !status){
@@ -46,13 +48,13 @@ router.post('/', async function(req, res){
     }
     try {
         //INSERT QUERY USING PLACE HOLDERS TO AVOID SQL INJECTION
-        const result = await pool.query('INSERT INTO jobs(company, position, status) VALUES($1, $2, $3) RETURNING *;', [company, position, status]);
+        const result = await pool.query('INSERT INTO jobs(company, position, status, user_id) VALUES($1, $2, $3, $4) RETURNING *;', [company, position, status, id]);
         return res.status(201).json(result.rows[0]);
     }
     //ERROR IN CASE SOMETHING BREAKS IN THE CODE
     catch(error) {
         console.error(error);
-        return res.status(500).json({Message: "Internal Service error"});
+        return res.status(500).json({Message: "Internal Server error"});
     }
 });
 
@@ -71,6 +73,7 @@ router.post('/', async function(req, res){
 router.put('/:id', async function(req, res){
     const id = Number(req.params.id);
     const status = req.body.status;
+    const userId = req.userId;
 
     //VALIDATION CHECKS IF STATUS is EMPTY OR JOB_ID IS NOT A NUMBER THEN THROWS ERROR IF TRUE
     if (!status || isNaN(id)){
@@ -78,7 +81,7 @@ router.put('/:id', async function(req, res){
     }
     try{
         // UPDATE QUERY WITH PLACE HOLDERS TO AVOID SQL INJECTION 
-        const result = await pool.query('UPDATE jobs SET status = $2 WHERE id = $1 RETURNING *;', [id, status]);
+        const result = await pool.query('UPDATE jobs SET status = $2 WHERE id = $1 AND user_id = $3 RETURNING *;', [id, status, userId]);
         //VALIDATION: CHEECKS IF ID EXISTS IN THE DATABASE
         if(result.rowCount === 0){
             return res.status(404).json({Message: "Job does not exist "});
@@ -106,6 +109,7 @@ router.put('/:id', async function(req, res){
 // DELETE 
 router.delete('/:id', async function(req, res){
     const id = Number(req.params.id);
+    const userId = req.userId;
 
     //VALIDATION CHECKS IF JOB ID IS RIGHT FORMAT IF NOT THEN ERROR 
     if(isNaN(id)){
@@ -115,9 +119,9 @@ router.delete('/:id', async function(req, res){
     try{
 
         // DELETE QUERY WITH PLACE HOLDERS TO AVOID SQL INJECTION
-        const result = await pool.query('DELETE FROM jobs WHERE id = $1;', [id]);
+        const result = await pool.query('DELETE FROM jobs WHERE id = $1 AND user_id = $2;', [id, userId]);
 
-        //VALIDATION CHECKS IF JOB EXISTS IN DATABASE IF NOT THEN ERROR 
+        // CHECKS WHETHER THE AUTHENTICATED USER OWNS A MATCHING JOB
         if(result.rowCount === 0){
             return res.status(404).json({Message: "Job does not exist"});
         }
